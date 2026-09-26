@@ -1,0 +1,32 @@
+[
+  {
+    "transaction_id": "TX12345",
+    "amount": 100.50,
+    "currency": "USD"
+  },
+  {
+    "transaction_id": "TX12346",
+    "amount": -25.00,
+    "currency": "USD"
+  },
+  {
+    "transaction_id": "TX12347",
+    "amount": 249.99,
+    "currency": "EUR"
+  },
+  {
+    "transaction_id": "TX12348",
+    "amount": 1250.00,
+    "currency": "GBP"
+  },
+  {
+    "transaction_id": "TX12349",
+    "amount": -12.50,
+    "currency": "USD"
+  },
+  {
+    "transaction_id": "TX12350",
+    "amount": 8500,
+    "currency": "JPY"
+  }
+]
