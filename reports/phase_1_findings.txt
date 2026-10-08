@@ -1,0 +1,11 @@
+Dataset: Credit Card Fraud Detection
+
+Rows: 284807
+Columns: 31
+
+Legitimate transactions: 284315
+Fraudulent transactions: 492
+Fraud rate: 0.1727%
+
+Missing values: 0
+Duplicate rows: 1081
