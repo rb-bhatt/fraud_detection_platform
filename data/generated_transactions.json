@@ -1,0 +1,12 @@
+[
+    {
+        "transaction_id": "TX12351",
+        "amount": 45.0,
+        "currency": "CAD"
+    },
+    {
+        "transaction_id": "TX12352",
+        "amount": -150.75,
+        "currency": "AUD"
+    }
+]

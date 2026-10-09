@@ -3,3 +3,5 @@ __pycache__/
 .pytest_cache/
 *.pyc
 data/raw/*.csv
+data/processed/*.csv
+models/*.pkl
