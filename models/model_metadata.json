@@ -1,0 +1,8 @@
+{
+    "model_name": "logistic_model",
+    "model_version": "1.0",
+    "feature_count": 30,
+    "approve_threshold": 0.2,
+    "block_threshold": 0.8,
+    "training_dataset_name": "creditcard.csv"
+}
