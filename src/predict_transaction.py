@@ -24,7 +24,7 @@ def predict_transaction(transaction_data: pd.DataFrame)->dict:
 if __name__ == "__main__":
     with open("models/scale.pkl","rb") as open_file:
         scaler=pickle.load(open_file)
-    with open("models/logistic_model.pkl","rb") as open_file:
+    with open("models/xgboost_model.pkl","rb") as open_file:
         model=pickle.load(open_file)
     with open("models/feature_names.json","r") as open_file:
         feature_name=json.load(open_file)
@@ -45,16 +45,21 @@ if __name__ == "__main__":
     fraud_prob=float(fraud_probability[0])
     #fraud_probability(fraud_prob)
 
-    model_name = "logistic_model"
+    model_name = "xgboost_model"
     model_version = "1.0"       
-    feature_count = len(feature_name)  
-    threshold_value = 0.8
+    feature_count = len(feature_name) 
+    threshold_values = {
+        "approval_threshold": 0.2,
+        "block_threshold": 0.8
+    } 
+    athreshold_value = 0.2
+
     training_dataset_name = "creditcard_clean.csv"
     metadata = {
         "model_name": model_name,
         "model_version": model_version,
         "feature_count": feature_count,
-        "threshold_value": threshold_value,
+        "threshold_value": threshold_values,
         "training_dataset_name": training_dataset_name
     }
     with open("models/model_metadata.json","w") as open_file:

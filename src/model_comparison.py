@@ -38,8 +38,6 @@ for name,model in models.items():
     PR_AUC=average_precision_score(y_val,val_prob)
     comparison_results.append({
         "Model": name,
-        "Classification Report": classification__report,
-        "Confusion Metrics": confusion_metrics.tolist(),
         "Precision": precision,
         "Recall": recall,
         "F1": F1_Score,
@@ -52,7 +50,7 @@ print("MODEL COMPARISON (Threshold = 0.50)")
 print(comparison_df.round(4).sort_values("PR-AUC", ascending=False).to_string(index=False))
 
 val_prob = validation_probabilities["Logistic Regression"]
-thresholds=[0.1,0.2,0.3,0.4,0.5]
+thresholds=[0.1,0.2,0.3,0.4,0.5,0.6, 0.7, 0.8, 0.9]
 threshold_result=[]
 val_prob = validation_probabilities["Logistic Regression"]
 for threshold in thresholds:
@@ -91,6 +89,7 @@ print("F1 Score:", f1_score(
 ))
 print("PR-AUC:", average_precision_score(y_val, val_prob))
 
+comparison_df = comparison_df.sort_values("PR-AUC", ascending=False)
 comparison_df.to_csv("reports/model_comparison.csv", index=False)
 threshold_df.to_csv("reports/threshold_comparison.csv", index=False)
 print("\nResults saved to:")
