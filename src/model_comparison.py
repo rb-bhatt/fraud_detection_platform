@@ -91,8 +91,8 @@ print("F1 Score:", f1_score(
 ))
 print("PR-AUC:", average_precision_score(y_val, val_prob))
 
-comparison_df.to_csv("model_comparison.csv", index=False)
-threshold_df.to_csv("threshold_comparison.csv", index=False)
+comparison_df.to_csv("reports/model_comparison.csv", index=False)
+threshold_df.to_csv("reports/threshold_comparison.csv", index=False)
 print("\nResults saved to:")
 print("- model_comparison.csv")
 print("- threshold_comparison.csv")
