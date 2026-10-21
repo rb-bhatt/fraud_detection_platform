@@ -1,6 +1,6 @@
 {
     "rows": 284807,
-    "colums": 31,
+    "columns": 31,
     "missing values": 0,
     "duplicate values": 1081,
     "fraud count": {

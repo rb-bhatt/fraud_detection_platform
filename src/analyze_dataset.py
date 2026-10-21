@@ -36,7 +36,7 @@ def data_quailty_report(df:pd.DataFrame)->dict:
     print("Duplicate Values:", report["duplicate_values"])
     return report
 
-def class_destribution_report(df:pd.DataFrame):
+def class_distribution_report(df:pd.DataFrame):
     count=df["Class"].value_counts()
     percentage=df["Class"].value_counts(normalize=True)*100
     class_distribution=percentage.reset_index()
@@ -52,7 +52,7 @@ print(amount_summary_by_class(df))
 def built_analysis_report(df:pd.DataFrame):
     report={
         "rows":df.shape[0],
-        "colums":df.shape[1],
+        "columns":df.shape[1],
         "missing values":int(df.isnull().sum().sum()),
         "duplicate values":int(df.duplicated().sum()),
         "fraud count":df["Class"].value_counts().to_dict(),
@@ -100,7 +100,7 @@ x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42
 print(x_train.shape[0],x_test.shape[0],y_train.shape[0],y_test.shape[0])
 print(y_train.value_counts(),y_test.value_counts())
 
-model=LogisticRegression(class_weight="balanced",max_iter=2000,random_state=42)
+model=LogisticRegression(class_weight="balanced",max_iter=2000,random_state=42,solver='liblinear')
 model.fit(x_train,y_train)
 y_pred=model.predict(x_test)
 print(y_pred)

@@ -1,7 +1,9 @@
 import json
+from pathlib import Path
 from transaction_validator import validate_transaction
 
-JSON_FILE=r"data\generated_transactions.json"
+JSON_FILE = Path("data/generated_transactions.json")
+
 try:
     with open(JSON_FILE,'r') as open_file:
         transactions=json.load(open_file)

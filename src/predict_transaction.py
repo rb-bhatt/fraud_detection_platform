@@ -48,15 +48,13 @@ if __name__ == "__main__":
     model_name = "logistic_model"
     model_version = "1.0"       
     feature_count = len(feature_name)  
-    approve_threshold = 0.2
-    block_threshold = 0.8
-    training_dataset_name = "creditcard.csv"
+    threshold_value = 0.8
+    training_dataset_name = "creditcard_clean.csv"
     metadata = {
         "model_name": model_name,
         "model_version": model_version,
         "feature_count": feature_count,
-        "approve_threshold": approve_threshold,
-        "block_threshold": block_threshold,
+        "threshold_value": threshold_value,
         "training_dataset_name": training_dataset_name
     }
     with open("models/model_metadata.json","w") as open_file:

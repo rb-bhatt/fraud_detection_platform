@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 transactions=[{
     "transaction_id": "TX12351",
@@ -11,7 +12,8 @@ transactions=[{
     "currency": "AUD"
   }]
 def write_transaction(transactions:list[dict]):
-    with open(r"data\generated_transactions.json",'w') as open_file:
+    file_path = Path("data/generated_transactions.json")
+    with open(file_path,'w') as open_file:
         json.dump(transactions,open_file,indent=4)
         print(f"Transactions successfully written to generated_transactions.json")
 
