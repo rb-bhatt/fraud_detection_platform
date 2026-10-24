@@ -5,6 +5,7 @@ import json
 def decide_transaction(fraud_prob: float) -> str:
     if not 0 <= fraud_prob <= 1:
         raise ValueError("Fraud probability must be between 0 and 1.")
+    
     if fraud_prob < 0.2:
         decision = "Approved"
     elif fraud_prob < 0.8:
@@ -15,15 +16,12 @@ def decide_transaction(fraud_prob: float) -> str:
     return decision
 
 def predict_transaction(transaction_data: pd.DataFrame)->dict:
-    transaction_scaled=scaler.transform(transaction_data)
-    fraud_probability=model.predict_proba(transaction_scaled)[:,1]
+    fraud_probability=model.predict_proba(transaction_data)[:,1]
     fraud_prob=float(fraud_probability[0])
     decision=decide_transaction(fraud_probability[0])
     return {"fraud_probability": fraud_prob, "decision": decision}
 
 if __name__ == "__main__":
-    with open("models/scale.pkl","rb") as open_file:
-        scaler=pickle.load(open_file)
     with open("models/xgboost_model.pkl","rb") as open_file:
         model=pickle.load(open_file)
     with open("models/feature_names.json","r") as open_file:
@@ -39,8 +37,7 @@ if __name__ == "__main__":
     print("Number of features:", len(transaction_data.columns))
     print("DataFrame shape:", transaction_data.shape)
 
-    transaction_scaled=scaler.transform(transaction_data)
-    fraud_probability=model.predict_proba(transaction_scaled)[:,1]
+    fraud_probability=model.predict_proba(transaction_data)[:,1]
     print("Fraud Probability:", fraud_probability)
     fraud_prob=float(fraud_probability[0])
     #fraud_probability(fraud_prob)
@@ -52,14 +49,13 @@ if __name__ == "__main__":
         "approval_threshold": 0.2,
         "block_threshold": 0.8
     } 
-    athreshold_value = 0.2
-
     training_dataset_name = "creditcard_clean.csv"
     metadata = {
         "model_name": model_name,
         "model_version": model_version,
         "feature_count": feature_count,
-        "threshold_value": threshold_values,
+        "threshold_values": threshold_values,
+        "selected_threshold": 0.6,
         "training_dataset_name": training_dataset_name
     }
     with open("models/model_metadata.json","w") as open_file:

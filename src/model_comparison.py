@@ -1,3 +1,5 @@
+import os
+import pickle
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -21,13 +23,16 @@ models={
 }
 comparison_results = []
 validation_probabilities = {}
-threshold = 0.50
+comparison_threshold = 0.60
 for name,model in models.items():
     print(f"Training {name}...")
     model.fit(x_fit, y_fit)
+    model_filename = name.lower().replace(" ", "_") + "_model.pkl"
+    with open(f"models/{model_filename}", "wb") as model_file:
+        pickle.dump(model, model_file)
     val_prob=model.predict_proba(x_val)[:,1]
     validation_probabilities[name] = val_prob
-    val_pred = (val_prob >= threshold).astype(int)
+    val_pred = (val_prob >= comparison_threshold).astype(int)
     print(f"=== {name}: Validation Results ===")
     confusion_metrics=confusion_matrix(y_val,val_pred)
     classification__report=classification_report(y_val,val_pred)
@@ -46,13 +51,13 @@ for name,model in models.items():
     })
 comparison_df = pd.DataFrame(comparison_results)
 
-print("MODEL COMPARISON (Threshold = 0.50)")
+print("MODEL COMPARISON (Threshold = 0.60)")
 print(comparison_df.round(4).sort_values("PR-AUC", ascending=False).to_string(index=False))
 
-val_prob = validation_probabilities["Logistic Regression"]
+val_prob = validation_probabilities["XGBoost"]
 thresholds=[0.1,0.2,0.3,0.4,0.5,0.6, 0.7, 0.8, 0.9]
 threshold_result=[]
-val_prob = validation_probabilities["Logistic Regression"]
+val_prob = validation_probabilities["XGBoost"]
 for threshold in thresholds:
         predictions = (val_prob >= threshold).astype(int)
         threshold_result.append({
@@ -62,13 +67,14 @@ for threshold in thresholds:
             "F1": f1_score(y_val, predictions, zero_division=0)
             })
 threshold_df = pd.DataFrame(threshold_result)
-print("LOGISTIC REGRESSION: THRESHOLD COMPARISON")
+print("XGBoost: THRESHOLD COMPARISON")
 print(threshold_df.round(4).to_string(index=False))
     
-model = models["Logistic Regression"]
-val_prob = validation_probabilities["Logistic Regression"]
-val_pred = (val_prob >= 0.50).astype(int)
-print("LOGISTIC REGRESSION: DETAILED VALIDATION RESULTS")
+model = models["XGBoost"]
+val_prob = validation_probabilities["XGBoost"]
+selected_threshold = 0.60
+val_pred = (val_prob >= selected_threshold).astype(int)
+print(f"XGBoost: DETAILED VALIDATION RESULTS (Threshold = {selected_threshold:.2f})")
 print("\nConfusion Matrix:")
 print(confusion_matrix(y_val, val_pred))
 print("\nClassification Report:")
@@ -90,8 +96,9 @@ print("F1 Score:", f1_score(
 print("PR-AUC:", average_precision_score(y_val, val_prob))
 
 comparison_df = comparison_df.sort_values("PR-AUC", ascending=False)
+os.makedirs("reports", exist_ok=True)
 comparison_df.to_csv("reports/model_comparison.csv", index=False)
-threshold_df.to_csv("reports/threshold_comparison.csv", index=False)
+threshold_df.to_csv("reports/xgboost_threshold_comparison.csv", index=False)
 print("\nResults saved to:")
-print("- model_comparison.csv")
-print("- threshold_comparison.csv")
+print("- reports/model_comparison.csv")
+print("- reports/xgboost_threshold_comparison.csv")

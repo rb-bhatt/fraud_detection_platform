@@ -1,7 +1,11 @@
 {
-    "model_name": "logistic_model",
+    "model_name": "xgboost_model",
     "model_version": "1.0",
     "feature_count": 30,
-    "threshold_value": 0.8,
+    "threshold_values": {
+        "approval_threshold": 0.2,
+        "block_threshold": 0.8
+    },
+    "selected_threshold": 0.6,
     "training_dataset_name": "creditcard_clean.csv"
 }
