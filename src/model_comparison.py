@@ -1,4 +1,5 @@
 import os
+import json
 import pickle
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -102,3 +103,34 @@ threshold_df.to_csv("reports/xgboost_threshold_comparison.csv", index=False)
 print("\nResults saved to:")
 print("- reports/model_comparison.csv")
 print("- reports/xgboost_threshold_comparison.csv")
+
+model="XGBoost"
+selected_threshold = 0.6
+test_prob= models["XGBoost"].predict_proba(x_test)[:,1]
+test_pred=(test_prob >= selected_threshold).astype(int)
+print(f"XGBoost: TEST RESULTS (Threshold = 0.60)")
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, test_pred))
+print("\nPrecision:")
+print(precision_score(y_test, test_pred, zero_division=0))
+print("\nRecall:")
+print(recall_score(y_test, test_pred, zero_division=0))
+print("\nF1 Score:")
+print(f1_score(y_test, test_pred, zero_division=0))
+print("\nPR-AUC:")
+print(average_precision_score(y_test, test_prob))
+print("\nAccuracy:")
+print(accuracy_score(y_test, test_pred))
+XGBoost_test={
+     "model":"XGBoost",
+     "threshold":selected_threshold,
+     "precision":float(precision_score(y_test, test_pred, zero_division=0)),
+     "recall": float(recall_score(y_test, test_pred, zero_division=0)),
+     "f1_score": float(f1_score(y_test, test_pred, zero_division=0)),
+     "pr_auc": float(average_precision_score(y_test, test_prob)),
+     "accuracy": float(accuracy_score(y_test, test_pred))
+}
+os.makedirs("reports", exist_ok=True)
+with open("reports/final_test_metrics.json", "w") as f:
+    json.dump(XGBoost_test, f)
+print("\nFinal test metrics saved to reports/final_test_metrics.json")
