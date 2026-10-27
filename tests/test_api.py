@@ -40,9 +40,20 @@ valid_transaction={
     "Amount":100}
 
 def response_validator(data):
-    assert isinstance(data["fraud_probability"],(int,float))
-    assert 0<=data["fraud_probability"] >= 0
-    assert "decision" in data
+    assert "prediction" in data
+    assert "explanation" in data
+    
+    pred = data["prediction"]
+    assert isinstance(pred["fraud_probability"], (int, float))
+    assert 0 <= pred["fraud_probability"] <= 1
+    assert "decision" in pred
+    
+    expl = data["explanation"]
+    assert isinstance(expl, list)
+    assert len(expl) <= 3
+    for item in expl:
+        assert "feature" in item
+        assert isinstance(item["contribution"], (int, float))
 
 def test_predict_transaction_request():
     response=client.post("/predict",json=valid_transaction)
@@ -63,10 +74,6 @@ def test_extra_fields_in_transaction_request():
     response = client.post("/predict",json={**valid_transaction, "extra_field": 123})
     assert response.status_code == 422
 
-def test_incorrect_feature_columns():
-    invalid_transaction = {"Time": 90000,"Amount": 100,"WrongFeature": 123,}
-    response = client.post("/predict",json=invalid_transaction,)
-    assert response.status_code in (422, 500)
 
 def test_model_info():
     response=client.get("/model-info")

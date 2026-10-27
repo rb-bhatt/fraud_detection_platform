@@ -1,9 +1,15 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
 from api.model_loader import model, feature_name, decide_transaction
+from api.explainer import explain_transaction
 import pandas as pd
-
+from fastapi import Depends
+from api.database import create_tables, get_db, Transaction, ReviewCase, Session
+import json
+import uuid
 app=FastAPI(title="Fraud Detection API",description="API for predicting fraudulent transactions")
+
+create_tables()
 
 @app.get("/health")
 def health_check():
@@ -46,8 +52,16 @@ class PredictionResponse(BaseModel):
     fraud_probability: float
     decision: str
 
+class FeatureExplanation(BaseModel):
+    feature: str
+    contribution: float
+
+class DetailedPredictionResponse(BaseModel):
+    prediction: PredictionResponse
+    explanation: list[FeatureExplanation]
+
 @app.post("/predict",response_model=PredictionResponse)
-def predict_transaction_request(request: TransactionRequest):
+def predict_transaction_request(request: TransactionRequest,db: Session = Depends(get_db),):
     transaction_dict = request.model_dump()
     transaction_dataframe = pd.DataFrame([transaction_dict])
     try:
@@ -55,14 +69,31 @@ def predict_transaction_request(request: TransactionRequest):
         probabilities = model.predict_proba(transaction_dataframe)
         fraud_probability = float(probabilities[0][1])
         decision = decide_transaction(fraud_probability)
-        return {"fraud_probability": round(fraud_probability, 4),"decision": decision}
-
+        explanation = explain_transaction(transaction_dataframe)
+        transaction = Transaction(
+            transaction_id=str(uuid.uuid4()),
+            amount=float(request.Amount),
+            fraud_probability=fraud_probability,
+            decision=decision,
+            original_features=json.dumps(transaction_dict),
+        )
+        db.add(transaction)
+        db.commit()
+        db.refresh(transaction)
+        return {
+            "prediction": {
+                "fraud_probability": round(fraud_probability, 4),
+                "decision": decision,
+            },
+            "explanation": explanation
+        }
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=422,detail="Invalid transaction features") from exc
 
     except Exception as exc:raise HTTPException(
             status_code=500,
             detail="Prediction failed") from exc
+    
 
 @app.get("/model-info")
 def model_info():
@@ -72,9 +103,3 @@ def model_info():
         "approval_threshold": 0.6,
         "block_threshold": 0.8,
     }
-
-@app.get("/response")
-def response(fraud_probability: float,decision: str):
-    response_model=PredictionResponse
-    assert isinstance(response_model["fraud_probability"],(int,float))
-    assert response_model["decision"] in {"Approved", "Review", "Block"}

@@ -3,7 +3,7 @@
     "model_version": "1.0",
     "feature_count": 30,
     "threshold_values": {
-        "approval_threshold": 0.2,
+        "approval_threshold": 0.6,
         "block_threshold": 0.8
     },
     "selected_threshold": 0.6,
