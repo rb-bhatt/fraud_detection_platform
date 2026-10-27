@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
 from api.model_loader import model, feature_name, decide_transaction
@@ -11,10 +12,7 @@ app=FastAPI(title="Fraud Detection API",description="API for predicting fraudule
 
 create_tables()
 
-@app.get("/health")
-def health_check():
-    return {"status": "healthy"}
-
+    
 class TransactionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     Time: float
@@ -60,7 +58,40 @@ class DetailedPredictionResponse(BaseModel):
     prediction: PredictionResponse
     explanation: list[FeatureExplanation]
 
-@app.post("/predict",response_model=PredictionResponse)
+class TransactionResponse(BaseModel):
+    id: int
+    transaction_id: str
+    amount: float
+    fraud_probability: float
+    decision: str
+    original_features: str | None
+    created_at: datetime
+
+
+class ReviewCaseResponse(BaseModel):
+    id: int
+    transaction_id: str
+    status: str
+    analyst_decision: str | None
+    notes: str | None
+    created_at: datetime
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
+
+@app.get("/review-cases",response_model=list[ReviewCaseResponse])
+def get_review_cases(db: Session = Depends(get_db)):
+    return db.query(ReviewCase).all()
+
+
+@app.get("/transactions",response_model=list[TransactionResponse])
+def get_transactions(db: Session = Depends(get_db)):
+    return db.query(Transaction).all()
+
+
+@app.post("/predict", response_model=DetailedPredictionResponse)
 def predict_transaction_request(request: TransactionRequest,db: Session = Depends(get_db),):
     transaction_dict = request.model_dump()
     transaction_dataframe = pd.DataFrame([transaction_dict])
@@ -80,6 +111,13 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
         db.add(transaction)
         db.commit()
         db.refresh(transaction)
+        if decision in {"Review", "Block"}:
+            review_case = ReviewCase(
+                transaction_id=transaction.transaction_id,
+                status="open",
+            )
+            db.add(review_case)
+            db.commit()
         return {
             "prediction": {
                 "fraud_probability": round(fraud_probability, 4),

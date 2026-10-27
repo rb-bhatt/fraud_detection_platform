@@ -58,8 +58,9 @@ def response_validator(data):
 def test_predict_transaction_request():
     response=client.post("/predict",json=valid_transaction)
     assert response.status_code==200
-    assert "fraud_probability" in response.json()
-    assert "decision" in response.json() 
+    assert "prediction" in response.json()
+    assert "fraud_probability" in response.json()["prediction"]
+    assert "decision" in response.json()["prediction"]
     response_validator(response.json())
 
 def test_post_predict():
