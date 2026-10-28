@@ -1,4 +1,6 @@
 from datetime import datetime
+import json
+import uuid
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
 from api.model_loader import model, feature_name, decide_transaction
@@ -6,8 +8,9 @@ from api.explainer import explain_transaction
 import pandas as pd
 from fastapi import Depends
 from api.database import create_tables, get_db, Transaction, ReviewCase, Session
-import json
-import uuid
+from api.ai_assistant import build_investigation_summary
+from api.agent_workflow import recommend_action
+
 app=FastAPI(title="Fraud Detection API",description="API for predicting fraudulent transactions")
 
 create_tables()
@@ -54,9 +57,15 @@ class FeatureExplanation(BaseModel):
     feature: str
     contribution: float
 
+class AgentRecommendation(BaseModel):
+    recommendation:str
+    requires_human_approval:bool
+    reason:str
+
 class DetailedPredictionResponse(BaseModel):
     prediction: PredictionResponse
     explanation: list[FeatureExplanation]
+    investigation_summary:str
 
 class TransactionResponse(BaseModel):
     id: int
@@ -75,6 +84,10 @@ class ReviewCaseResponse(BaseModel):
     analyst_decision: str | None
     notes: str | None
     created_at: datetime
+
+class CaseActionRequest(BaseModel):
+    transaction_id:str
+    nodes:str|None=None
 
 @app.get("/health")
 def health_check():
@@ -101,6 +114,12 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
         fraud_probability = float(probabilities[0][1])
         decision = decide_transaction(fraud_probability)
         explanation = explain_transaction(transaction_dataframe)
+        investigation_summary= build_investigation_summary(
+            fraud_probability,
+            decision,
+            explanation,
+            transaction_dict)
+        agent_recommendation = recommend_action(fraud_probability, decision, investigation_summary)
         transaction = Transaction(
             transaction_id=str(uuid.uuid4()),
             amount=float(request.Amount),
@@ -118,12 +137,15 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
             )
             db.add(review_case)
             db.commit()
+
         return {
             "prediction": {
                 "fraud_probability": round(fraud_probability, 4),
                 "decision": decision,
             },
-            "explanation": explanation
+            "explanation": explanation,
+            "investigation_summary": investigation_summary,
+            "agent_recommendation":agent_recommendation()
         }
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=422,detail="Invalid transaction features") from exc
@@ -141,3 +163,29 @@ def model_info():
         "approval_threshold": 0.6,
         "block_threshold": 0.8,
     }
+
+@app.post("/approve-case")
+def approve_case(payload: CaseActionRequest, db: Session = Depends(get_db)):
+    case = db.query(ReviewCase).filter(ReviewCase.transaction_id == payload.transaction_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Review case not found")
+    
+    case.status = "approved"
+    case.analyst_decision = "approved"
+    case.notes = payload.notes
+    db.commit()
+    db.refresh(case)
+    return {"status": "success", "message": f"Case {payload.transaction_id} approved", "case_id": case.id}
+
+@app.post("/reject-case")
+def reject_case(payload: CaseActionRequest, db: Session = Depends(get_db)):
+    case = db.query(ReviewCase).filter(ReviewCase.transaction_id == payload.transaction_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Review case not found")
+    
+    case.status = "rejected"
+    case.analyst_decision = "rejected"
+    case.notes = payload.notes
+    db.commit()
+    db.refresh(case)
+    return {"status": "success", "message": f"Case {payload.transaction_id} rejected", "case_id": case.id}

@@ -26,6 +26,7 @@ class ReviewCase(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     transaction_id: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, default="open", nullable=False)
+    investigation_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     analyst_decision: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),default=lambda: datetime.now(timezone.utc),nullable=False,)
@@ -39,3 +40,4 @@ def get_db():
         yield db
     finally:
         db.close()
+

@@ -42,6 +42,10 @@ valid_transaction={
 def response_validator(data):
     assert "prediction" in data
     assert "explanation" in data
+    assert "investigation_summary" in data
+    assert isinstance(data["investigation_summary"],str)
+    assert data ["investigation_summary"]
+
     
     pred = data["prediction"]
     assert isinstance(pred["fraud_probability"], (int, float))
