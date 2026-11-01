@@ -30,8 +30,7 @@ def build_investigation_summary(
     else:
         summary += "\nInvestigation: Transaction is considered low risk."
     summary += (
-        "\n\nHuman approval required: A human analyst must review "
-        "and approve the final action before it is executed."
+        "\n\nHuman analyst review and approval are required before any high-impact action.."
     )
     prompt = (
         "You are a fraud investigation assistant. "

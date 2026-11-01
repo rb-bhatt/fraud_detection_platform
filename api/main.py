@@ -10,6 +10,8 @@ from fastapi import Depends
 from api.database import create_tables, get_db, Transaction, ReviewCase, Session
 from api.ai_assistant import build_investigation_summary
 from api.agent_workflow import recommend_action
+from api.agent_tools import get_transaction_history
+
 
 app=FastAPI(title="Fraud Detection API",description="API for predicting fraudulent transactions")
 
@@ -58,7 +60,7 @@ class FeatureExplanation(BaseModel):
     contribution: float
 
 class AgentRecommendation(BaseModel):
-    recommendation:str
+    recommended_action: str
     requires_human_approval:bool
     reason:str
 
@@ -66,7 +68,8 @@ class DetailedPredictionResponse(BaseModel):
     prediction: PredictionResponse
     explanation: list[FeatureExplanation]
     investigation_summary:str
-
+    agent_recommendation: AgentRecommendation
+    
 class TransactionResponse(BaseModel):
     id: int
     transaction_id: str
@@ -86,8 +89,8 @@ class ReviewCaseResponse(BaseModel):
     created_at: datetime
 
 class CaseActionRequest(BaseModel):
-    transaction_id:str
-    nodes:str|None=None
+    transaction_id: str
+    notes: str | None = None
 
 @app.get("/health")
 def health_check():
@@ -145,7 +148,7 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
             },
             "explanation": explanation,
             "investigation_summary": investigation_summary,
-            "agent_recommendation":agent_recommendation()
+            "agent_recommendation":agent_recommendation
         }
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=422,detail="Invalid transaction features") from exc
@@ -189,3 +192,7 @@ def reject_case(payload: CaseActionRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(case)
     return {"status": "success", "message": f"Case {payload.transaction_id} rejected", "case_id": case.id}
+
+@app.get("/agent/history/{transaction_id}")
+def transaction_history(transaction_id: str, db: Session = Depends(get_db)):
+    return get_transaction_history(db, transaction_id)

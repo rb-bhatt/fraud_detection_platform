@@ -45,6 +45,7 @@ def response_validator(data):
     assert "investigation_summary" in data
     assert isinstance(data["investigation_summary"],str)
     assert data ["investigation_summary"]
+    assert "agent_recommendation" in data
 
     
     pred = data["prediction"]
@@ -58,6 +59,19 @@ def response_validator(data):
     for item in expl:
         assert "feature" in item
         assert isinstance(item["contribution"], (int, float))
+
+    agent= data["agent_recommendation"]
+    assert "recommended_action" in agent
+    assert "requires_human_approval" in agent
+    assert "reason" in agent
+    assert isinstance(agent["requires_human_approval"], bool)
+
+    agent = data["agent_recommendation"]
+    assert agent["recommended_action"] in {
+        "Monitor",
+        "human_review",
+        "escalate_for_manual_approval",
+    }
 
 def test_predict_transaction_request():
     response=client.post("/predict",json=valid_transaction)
@@ -99,3 +113,37 @@ def test_incorrect_feature_columns():
         json=invalid_transaction,
     )
     assert response.status_code == 422
+
+def test_transactions_endpoint():
+    prediction_response = client.post("/predict", json=valid_transaction)
+    assert prediction_response.status_code == 200
+
+    response = client.get("/transactions")
+    assert response.status_code == 200
+
+    transactions = response.json()
+    assert isinstance(transactions, list)
+    assert len(transactions) > 0
+
+    latest = transactions[-1]
+    assert "transaction_id" in latest
+    assert "amount" in latest
+    assert "fraud_probability" in latest
+    assert "decision" in latest
+
+def test_review_cases_endpoint():
+    response = client.get("/review-cases")
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+def test_approve_missing_case():
+    response = client.post(
+        "/approve-case",
+        json={
+            "transaction_id": "missing-case-id",
+            "notes": "Test case",
+        },
+    )
+
+    assert response.status_code == 404
