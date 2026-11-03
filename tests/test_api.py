@@ -46,6 +46,7 @@ def response_validator(data):
     assert isinstance(data["investigation_summary"],str)
     assert data ["investigation_summary"]
     assert "agent_recommendation" in data
+    assert "latency_ms" in data
 
     
     pred = data["prediction"]
@@ -72,6 +73,9 @@ def response_validator(data):
         "human_review",
         "escalate_for_manual_approval",
     }
+
+    assert isinstance(data["latency_ms"], (int, float))
+    assert data["latency_ms"] >= 0
 
 def test_predict_transaction_request():
     response=client.post("/predict",json=valid_transaction)
@@ -147,3 +151,20 @@ def test_approve_missing_case():
     )
 
     assert response.status_code == 404
+
+def test_agent_history():
+    response=client.get(f"/agent/history/{transaction_id}")
+    assert response.status_code==200
+    assert isinstance(response.json(), list)
+
+def test_metrics_endpoint():
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_transactions"] >= 0
+    assert 0 <= data["fraud_rate"] <= 1
+    assert data["approved"] >= 0
+    assert data["review"] >= 0
+    assert data["blocked"] >= 0
+    assert "average_latency_ms" in data
+    assert data["average_latency_ms"] >= 0
