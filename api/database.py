@@ -20,6 +20,7 @@ class Transaction(Base):
     decision: Mapped[str] = mapped_column(String, nullable=False)
     original_features: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime,server_default=func.now(),nullable=False,)
+    latency_ms: Mapped[float] = mapped_column(Float, nullable=False)
 
 class ReviewCase(Base):
     __tablename__ = "review_cases"

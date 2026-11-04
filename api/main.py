@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 import json
 import uuid
 from fastapi import FastAPI, HTTPException
@@ -69,6 +70,7 @@ class DetailedPredictionResponse(BaseModel):
     explanation: list[FeatureExplanation]
     investigation_summary:str
     agent_recommendation: AgentRecommendation
+    latency_ms: float
     
 class TransactionResponse(BaseModel):
     id: int
@@ -78,6 +80,7 @@ class TransactionResponse(BaseModel):
     decision: str
     original_features: str | None
     created_at: datetime
+    latency_ms: float
 
 
 class ReviewCaseResponse(BaseModel):
@@ -94,8 +97,11 @@ class CaseActionRequest(BaseModel):
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy"}
-
+    return {
+    "status": "healthy",
+    "model": "XGBoost",
+    "model_loaded": model is not None,
+}
 
 @app.get("/review-cases",response_model=list[ReviewCaseResponse])
 def get_review_cases(db: Session = Depends(get_db)):
@@ -109,6 +115,7 @@ def get_transactions(db: Session = Depends(get_db)):
 
 @app.post("/predict", response_model=DetailedPredictionResponse)
 def predict_transaction_request(request: TransactionRequest,db: Session = Depends(get_db),):
+    start_time = time.perf_counter()
     transaction_dict = request.model_dump()
     transaction_dataframe = pd.DataFrame([transaction_dict])
     try:
@@ -140,7 +147,8 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
             )
             db.add(review_case)
             db.commit()
-
+            db.refresh(review_case)
+        latency_ms = (time.perf_counter() - start_time) * 1000
         return {
             "prediction": {
                 "fraud_probability": round(fraud_probability, 4),
@@ -148,7 +156,8 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
             },
             "explanation": explanation,
             "investigation_summary": investigation_summary,
-            "agent_recommendation":agent_recommendation
+            "agent_recommendation":agent_recommendation,
+            "latency_ms": round(latency_ms, 2)
         }
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=422,detail="Invalid transaction features") from exc
@@ -196,3 +205,27 @@ def reject_case(payload: CaseActionRequest, db: Session = Depends(get_db)):
 @app.get("/agent/history/{transaction_id}")
 def transaction_history(transaction_id: str, db: Session = Depends(get_db)):
     return get_transaction_history(db, transaction_id)
+
+@app.get("/metrics")
+def get_metrics(db: Session = Depends(get_db)):
+    transactions = db.query(Transaction).all()
+    total_transactions = len(transactions)
+    approved = sum(t.decision == "Approved" for t in transactions)
+    review = sum(t.decision == "Review" for t in transactions)
+    blocked = sum(t.decision == "Block" for t in transactions)
+    fraud_rate = ((review + blocked) / total_transactions if total_transactions
+        else 0)
+    average_latency_ms = (
+        sum(t.latency_ms for t in transactions) / total_transactions if total_transactions
+        else 0)
+    open_review_cases = (db.query(ReviewCase).filter(ReviewCase.status == "open").count())
+
+    return {
+        "total_transactions": total_transactions,
+        "approved": approved,
+        "review": review,
+        "blocked": blocked,
+        "fraud_rate": round(fraud_rate, 4),
+        "open_review_cases": open_review_cases,
+        "average_latency_ms": round(average_latency_ms, 2)
+    }
