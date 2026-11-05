@@ -97,20 +97,16 @@ class CaseActionRequest(BaseModel):
 
 @app.get("/health")
 def health_check():
-    return {
-    "status": "healthy",
-    "model": "XGBoost",
-    "model_loaded": model is not None,
-}
+    return {"status": "healthy",}
 
 @app.get("/review-cases",response_model=list[ReviewCaseResponse])
 def get_review_cases(db: Session = Depends(get_db)):
     return db.query(ReviewCase).all()
 
 
-@app.get("/transactions",response_model=list[TransactionResponse])
+@app.get("/transactions", response_model=list[TransactionResponse])
 def get_transactions(db: Session = Depends(get_db)):
-    return db.query(Transaction).all()
+    return db.query(Transaction).order_by(Transaction.id.desc()).all()
 
 
 @app.post("/predict", response_model=DetailedPredictionResponse)
@@ -130,12 +126,14 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
             explanation,
             transaction_dict)
         agent_recommendation = recommend_action(fraud_probability, decision, investigation_summary)
+        latency_ms = (time.perf_counter() - start_time) * 1000
         transaction = Transaction(
             transaction_id=str(uuid.uuid4()),
             amount=float(request.Amount),
             fraud_probability=fraud_probability,
             decision=decision,
             original_features=json.dumps(transaction_dict),
+            latency_ms=round(latency_ms, 2),
         )
         db.add(transaction)
         db.commit()
@@ -148,7 +146,6 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
             db.add(review_case)
             db.commit()
             db.refresh(review_case)
-        latency_ms = (time.perf_counter() - start_time) * 1000
         return {
             "prediction": {
                 "fraud_probability": round(fraud_probability, 4),

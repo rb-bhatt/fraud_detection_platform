@@ -2,8 +2,10 @@ import pandas as pd
 import numpy as np
 import torch
 from torch import nn
+import random
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import precision_recall_curve,confusion_matrix,classification_report
 from torch.utils.data import DataLoader, TensorDataset
 import matplotlib.pyplot as plt
 
@@ -14,6 +16,10 @@ print(df.info())
 print(df.head())
 print(df.columns)
 print(df["Class"].value_counts())
+
+random.seed(42)
+np.random.seed(42)
+torch.manual_seed(42)
 
 normal_df= df[df["Class"]==0]
 X_normal= normal_df.drop(["Class"],axis=1)
@@ -201,3 +207,22 @@ print("Median:", normal_val_errors.median().item())
 print("\nFraudulent transactions")
 print("Mean:", fraud_val_errors.mean().item())
 print("Median:", fraud_val_errors.median().item())
+
+val_errors= all_val_errors.numpy()
+precision, recall, thresholds = precision_recall_curve(y_val, val_errors)
+f1_scores = 2 * (precision[:-1] * recall[:-1]) / (precision[:-1] + recall[:-1] + 1e-10)
+
+best_idx= np.argmax(f1_scores)
+best_threshold= thresholds[best_idx]
+best_f1= f1_scores[best_idx]
+print(f"Best threshold: {best_threshold:.6f}")
+print(f"Best validation F1: {best_f1:.4f}")
+print(f"Validation precision: {precision[best_idx]:.4f}")
+print(f"Validation recall: {recall[best_idx]:.4f}")
+
+test_errors=calculate_reconstruction_error(model,X_test_tensor)
+y_pred_test = (test_errors.numpy() > best_threshold).astype(int)
+print("Confusion Matrix:",confusion_matrix(y_test,y_pred_test))
+print("Classification Report:",classification_report(y_test,y_pred_test,digits=4,zero_division=0))
+
+torch.save(model.state_dict(),"models/deep_learning/autoencoder.pth")

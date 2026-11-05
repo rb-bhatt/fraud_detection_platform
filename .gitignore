@@ -5,4 +5,5 @@ __pycache__/
 data/raw/*.csv
 data/processed/*.csv
 models/*.pkl
+models/deep_learning/*.pth
 data/fraud_detection.db

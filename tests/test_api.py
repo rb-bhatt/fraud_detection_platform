@@ -153,8 +153,18 @@ def test_approve_missing_case():
     assert response.status_code == 404
 
 def test_agent_history():
-    response=client.get(f"/agent/history/{transaction_id}")
-    assert response.status_code==200
+    prediction_response = client.post("/predict",json=valid_transaction)
+    assert prediction_response.status_code == 200
+
+    transactions_response = client.get("/transactions")
+    assert transactions_response.status_code == 200
+
+    transactions = transactions_response.json()
+    transaction_id = transactions[-1]["transaction_id"]
+
+    response = client.get(f"/agent/history/{transaction_id}")
+
+    assert response.status_code == 200
     assert isinstance(response.json(), list)
 
 def test_metrics_endpoint():
