@@ -78,6 +78,7 @@ class TransactionResponse(BaseModel):
     transaction_id: str
     amount: float
     fraud_probability: float
+    anomaly_score: float | None
     decision: str
     original_features: str | None
     created_at: datetime
@@ -133,6 +134,7 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
             transaction_id=str(uuid.uuid4()),
             amount=float(request.Amount),
             fraud_probability=fraud_probability,
+            anomaly_score=anomaly_score,
             decision=decision,
             original_features=json.dumps(transaction_dict),
             latency_ms=round(latency_ms, 2),
@@ -171,6 +173,8 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
 def model_info():
     return {
         "model": "XGBoost",
+        "secondary_model": "PyTorch Autoencoder",
+        "secondary_signal": "anomaly_score",
         "version": "1.0",
         "approval_threshold": 0.6,
         "block_threshold": 0.8,
@@ -218,6 +222,7 @@ def get_metrics(db: Session = Depends(get_db)):
     average_latency_ms = (
         sum(t.latency_ms for t in transactions) / total_transactions if total_transactions
         else 0)
+    anomaly_scores = [t.anomaly_score for t in transactions if t.anomaly_score is not None]
     open_review_cases = (db.query(ReviewCase).filter(ReviewCase.status == "open").count())
 
     return {
@@ -227,5 +232,8 @@ def get_metrics(db: Session = Depends(get_db)):
         "blocked": blocked,
         "fraud_rate": round(fraud_rate, 4),
         "open_review_cases": open_review_cases,
-        "average_latency_ms": round(average_latency_ms, 2)
+        "average_latency_ms": round(average_latency_ms, 2),
+        "average_anomaly_score": round(
+            sum(anomaly_scores) / len(anomaly_scores), 4
+        ) if anomaly_scores else 0,
     }

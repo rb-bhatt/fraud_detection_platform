@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import DateTime, Column, Integer, String, Float,Text, func
+from sqlalchemy import DateTime, Column, Integer, String, Float,Text, func, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from typing import Optional
 from sqlalchemy import create_engine
@@ -17,6 +17,7 @@ class Transaction(Base):
     transaction_id: Mapped[str] = mapped_column(String, nullable=False)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     fraud_probability: Mapped[float] = mapped_column(Float, nullable=False)
+    anomaly_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     decision: Mapped[str] = mapped_column(String, nullable=False)
     original_features: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime,server_default=func.now(),nullable=False,)
@@ -34,6 +35,12 @@ class ReviewCase(Base):
 
 def create_tables():
     Base.metadata.create_all(engine)
+    columns = {column["name"] for column in inspect(engine).get_columns("transaction")}
+    if "anomaly_score" not in columns:
+        with engine.begin() as connection:
+            connection.execute(
+                text('ALTER TABLE "transaction" ADD COLUMN anomaly_score FLOAT')
+            )
 
 def get_db():
     db=SessionLocal()
@@ -41,4 +48,3 @@ def get_db():
         yield db
     finally:
         db.close()
-
