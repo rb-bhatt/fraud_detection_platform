@@ -4,7 +4,7 @@ import json
 import uuid
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
-from api.model_loader import model, feature_name, decide_transaction
+from api.model_loader import model, feature_name, decide_transaction,autoencoder_model, scaler, calculate_anomaly_score
 from api.explainer import explain_transaction
 import pandas as pd
 from fastapi import Depends
@@ -54,6 +54,7 @@ class TransactionRequest(BaseModel):
 
 class PredictionResponse(BaseModel):
     fraud_probability: float
+    anomaly_score: float
     decision: str
 
 class FeatureExplanation(BaseModel):
@@ -118,6 +119,7 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
         transaction_dataframe = transaction_dataframe[feature_name]
         probabilities = model.predict_proba(transaction_dataframe)
         fraud_probability = float(probabilities[0][1])
+        anomaly_score = calculate_anomaly_score(autoencoder_model, scaler, transaction_dataframe)
         decision = decide_transaction(fraud_probability)
         explanation = explain_transaction(transaction_dataframe)
         investigation_summary= build_investigation_summary(
@@ -149,6 +151,7 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
         return {
             "prediction": {
                 "fraud_probability": round(fraud_probability, 4),
+                "anomaly_score": round(anomaly_score, 4),
                 "decision": decision,
             },
             "explanation": explanation,

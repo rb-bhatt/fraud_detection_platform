@@ -1,5 +1,8 @@
 from fastapi.testclient import TestClient
+import pytest
 from api.main import app
+import pandas as pd
+
 client=TestClient(app)
 
 def test_health_check():
@@ -52,6 +55,8 @@ def response_validator(data):
     pred = data["prediction"]
     assert isinstance(pred["fraud_probability"], (int, float))
     assert 0 <= pred["fraud_probability"] <= 1
+    assert "anomaly_score" in pred
+    assert isinstance(pred["anomaly_score"], (int, float))
     assert "decision" in pred
     
     expl = data["explanation"]
@@ -83,6 +88,7 @@ def test_predict_transaction_request():
     assert "prediction" in response.json()
     assert "fraud_probability" in response.json()["prediction"]
     assert "decision" in response.json()["prediction"]
+    assert response.json()["prediction"]["decision"] in {"Approved", "Review", "Block"}
     response_validator(response.json())
 
 def test_post_predict():
@@ -106,6 +112,10 @@ def test_model_info():
     assert data["approval_threshold"] == 0.6 
     assert data["block_threshold"] == 0.8
 
+def test_missing_model_artifacts_error(monkeypatch):
+    import api.model_loader
+    with pytest.raises(Exception):
+        api.model_loader.calculate_anomaly_score(None, api.model_loader.scaler, pd.DataFrame([valid_transaction]))
 
 def test_incorrect_feature_columns():
     invalid_transaction = {
