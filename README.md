@@ -33,6 +33,29 @@ Useful endpoints:
 - `GET /transactions`
 - `GET /metrics`
 
+## Dashboard
+
+Start the API in one terminal:
+
+```powershell
+.\.venv\Scripts\uvicorn.exe api.main:app --reload
+```
+
+Start the dashboard in a second terminal:
+
+```powershell
+Set-Location dashboard
+python -m http.server 5500
+```
+
+Open `http://127.0.0.1:5500` in a browser. The dashboard provides:
+
+- Decision and model-health charts
+- Transaction and review-case tables
+- Approve/reject actions for open review cases
+- XGBoost and PyTorch model metadata
+- A quick prediction form using neutral feature defaults
+
 ## Model comparison
 
 See [reports/model_comparison.md](reports/model_comparison.md) for the

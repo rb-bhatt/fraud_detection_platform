@@ -3,6 +3,7 @@ import time
 import json
 import uuid
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict
 from api.model_loader import model, feature_name, decide_transaction,autoencoder_model, scaler, calculate_anomaly_score
 from api.explainer import explain_transaction
@@ -15,6 +16,12 @@ from api.agent_tools import get_transaction_history
 
 
 app=FastAPI(title="Fraud Detection API",description="API for predicting fraudulent transactions")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5500", "http://localhost:5500"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 create_tables()
 

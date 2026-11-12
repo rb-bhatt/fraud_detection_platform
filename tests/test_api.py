@@ -111,6 +111,8 @@ def test_model_info():
     assert data["model"] == "XGBoost"
     assert data["approval_threshold"] == 0.6 
     assert data["block_threshold"] == 0.8
+    assert data["secondary_model"] == "PyTorch Autoencoder"
+    assert data["secondary_signal"] == "anomaly_score"
 
 def test_missing_model_artifacts_error(monkeypatch):
     import api.model_loader
@@ -188,3 +190,5 @@ def test_metrics_endpoint():
     assert data["blocked"] >= 0
     assert "average_latency_ms" in data
     assert data["average_latency_ms"] >= 0
+    assert "average_anomaly_score" in data
+    assert data["average_anomaly_score"] >= 0
