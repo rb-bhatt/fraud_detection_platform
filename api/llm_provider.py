@@ -14,7 +14,7 @@ def generate_investigation_summary(prompt: str) -> str:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is required when LLM_PROVIDER=gemini")
 
-    model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
     endpoint = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
         f"{model}:generateContent"
