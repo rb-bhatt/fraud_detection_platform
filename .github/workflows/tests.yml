@@ -23,7 +23,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          python -c "from pathlib import Path; lines=Path('requirements.txt').read_text(encoding='utf-16').splitlines(); Path('requirements-linux.txt').write_text('\n'.join(line for line in lines if not line.startswith('pywin32==')), encoding='utf-8')"
+          python -m pip install -r requirements-linux.txt
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 
       - name: Run tests

@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: fraud-detection-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DASHBOARD_ORIGIN
+        value: https://fraud-detection-dashboard.onrender.com
+
+  - type: web
+    name: fraud-detection-dashboard
+    runtime: static
+    rootDir: dashboard
+    buildCommand: >-
+      python -c "import os; open('config.js','w').write('window.FRAUD_API_URL = '
+      + repr(os.environ['API_BASE_URL']) + ';')"
+    staticPublishPath: .
+    envVars:
+      - key: API_BASE_URL
+        value: https://fraud-detection-api.onrender.com

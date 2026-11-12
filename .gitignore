@@ -7,3 +7,4 @@ data/processed/*.csv
 models/*.pkl
 models/deep_learning/*.pth
 data/fraud_detection.db
+.env

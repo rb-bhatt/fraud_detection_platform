@@ -1,4 +1,5 @@
 from pathlib import Path
+import math
 
 import joblib
 import numpy as np
@@ -44,4 +45,7 @@ def calculate_anomaly_score(
     with torch.no_grad():
         reconstructed = model(tensor_features)
     error = torch.mean((tensor_features - reconstructed) ** 2, dim=1)
-    return float(error.item())
+    score = float(error.item())
+    if not math.isfinite(score):
+        raise ValueError("Anomaly score is not finite for these features")
+    return score

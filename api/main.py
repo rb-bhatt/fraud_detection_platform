@@ -1,4 +1,6 @@
 from datetime import datetime
+import os
+import math
 import time
 import json
 import uuid
@@ -16,9 +18,14 @@ from api.agent_tools import get_transaction_history
 
 
 app=FastAPI(title="Fraud Detection API",description="API for predicting fraudulent transactions")
+dashboard_origin = os.getenv("DASHBOARD_ORIGIN")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5500", "http://localhost:5500"],
+    allow_origins=[
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+        *([dashboard_origin] if dashboard_origin else []),
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -229,7 +236,11 @@ def get_metrics(db: Session = Depends(get_db)):
     average_latency_ms = (
         sum(t.latency_ms for t in transactions) / total_transactions if total_transactions
         else 0)
-    anomaly_scores = [t.anomaly_score for t in transactions if t.anomaly_score is not None]
+    anomaly_scores = [
+        t.anomaly_score
+        for t in transactions
+        if t.anomaly_score is not None and math.isfinite(t.anomaly_score)
+    ]
     open_review_cases = (db.query(ReviewCase).filter(ReviewCase.status == "open").count())
 
     return {

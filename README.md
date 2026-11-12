@@ -74,6 +74,32 @@ docker compose down
 ```
 
 The SQLite database is persisted through the `./data:/app/data` Compose volume.
+The Docker stack has been verified locally with the API health endpoint,
+dashboard page, proxied metrics endpoint, and quick prediction flow.
+
+## Gemini investigation summaries
+
+The default provider is the local mock provider, so tests and local development
+do not require an API key. To enable Gemini, set these environment variables
+without committing the key:
+
+```powershell
+$env:LLM_PROVIDER = "gemini"
+$env:GEMINI_API_KEY = "your-key"
+```
+
+Gemini summarizes the existing fraud probability, decision, and SHAP
+explanations. It does not make the fraud decision; XGBoost remains responsible
+for `Approved`, `Review`, and `Block`.
+
+## Render deployment
+
+The [render.yaml](render.yaml) Blueprint defines an API service and dashboard
+static site. In Render, create a new Blueprint from this repository, then
+verify the generated service URLs and update `API_BASE_URL` and
+`DASHBOARD_ORIGIN` if Render assigns different names. Add the
+`GEMINI_API_KEY` secret to the API service. Never place the key in source code
+or the dashboard.
 
 ## Model comparison
 
