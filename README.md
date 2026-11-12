@@ -4,6 +4,8 @@ This project demonstrates a production-oriented fraud detection workflow using
 classical machine learning, PyTorch deep learning, explainability, GenAI-style
 investigation summaries, and human-supervised agent recommendations.
 
+Tests run automatically through GitHub Actions on pushes and pull requests.
+
 ## Architecture
 
 1. FastAPI receives and validates a transaction.
@@ -55,6 +57,23 @@ Open `http://127.0.0.1:5500` in a browser. The dashboard provides:
 - Approve/reject actions for open review cases
 - XGBoost and PyTorch model metadata
 - A quick prediction form using neutral feature defaults
+
+## Docker
+
+Docker Desktop is required. From the project root:
+
+```powershell
+docker compose up --build
+```
+
+Open the dashboard at `http://localhost:5500` and the API at
+`http://localhost:8000/docs`. Stop the services with:
+
+```powershell
+docker compose down
+```
+
+The SQLite database is persisted through the `./data:/app/data` Compose volume.
 
 ## Model comparison
 

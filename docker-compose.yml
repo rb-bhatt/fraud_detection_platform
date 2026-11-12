@@ -1,0 +1,22 @@
+services:
+  api:
+    build: .
+    container_name: fraud_api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+    volumes:
+      - ./data:/app/data
+    restart: always
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+    container_name: fraud_dashboard
+    ports:
+      - "5500:80"
+    depends_on:
+      - api
+    restart: always
