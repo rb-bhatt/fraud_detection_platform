@@ -21,7 +21,7 @@ def generate_investigation_summary(prompt: str) -> str:
     )
     response = requests.post(
         endpoint,
-        params={"key": api_key},
+        headers={"x-goog-api-key": api_key},
         json={"contents": [{"parts": [{"text": prompt}]}]},
         timeout=20,
     )
