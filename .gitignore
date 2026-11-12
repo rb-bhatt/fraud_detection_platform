@@ -6,5 +6,7 @@ data/raw/*.csv
 data/processed/*.csv
 models/*.pkl
 models/deep_learning/*.pth
+!models/xgboost_model.pkl
+!models/deep_learning/autoencoder.pth
 data/fraud_detection.db
 .env
