@@ -15,7 +15,9 @@ from api.database import create_tables, get_db, Transaction, ReviewCase, Session
 from api.ai_assistant import build_investigation_summary
 from api.agent_workflow import recommend_action
 from api.agent_tools import get_transaction_history
+import logging
 
+logger = logging.getLogger(__name__)
 
 app=FastAPI(title="Fraud Detection API",description="API for predicting fraudulent transactions")
 dashboard_origin = os.getenv("DASHBOARD_ORIGIN")
@@ -176,11 +178,18 @@ def predict_transaction_request(request: TransactionRequest,db: Session = Depend
             "latency_ms": round(latency_ms, 2)
         }
     except (KeyError, ValueError) as exc:
-        raise HTTPException(status_code=422,detail="Invalid transaction features") from exc
+        logger.exception("Invalid transaction features")
+        raise HTTPException(
+            status_code=422,
+            detail="Invalid transaction features"
+        ) from exc
 
-    except Exception as exc:raise HTTPException(
+    except Exception as exc:
+        logger.exception("Prediction pipeline failed")
+        raise HTTPException(
             status_code=500,
-            detail="Prediction failed") from exc
+            detail="Prediction failed"
+        ) from exc
     
 
 @app.get("/model-info")
