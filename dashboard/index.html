@@ -3,73 +3,606 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#10182d">
+    <meta name="description" content="Fraud Detection Command Center — transaction risk monitoring and model intelligence.">
     <title>Fraud Detection Command Center</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container-fluid dashboard-shell">
-        <header class="topbar">
-            <div>
-                <p class="eyebrow">REAL-TIME RISK MONITORING</p>
-                <h1>Fraud Detection Command Center</h1>
-                <p class="subtitle">XGBoost decisions with PyTorch anomaly intelligence</p>
+    <div class="app-shell">
+        <aside class="sidebar" aria-label="Main navigation">
+            <a class="brand" href="#overview" data-view="overview">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 40 40" fill="none">
+                        <path d="M20 4.5 32.5 9v9.7c0 8-5.2 13.6-12.5 17.1C12.7 32.3 7.5 26.7 7.5 18.7V9L20 4.5Z"
+                            stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M13.5 20.2 18 24.5l9-10"
+                            stroke="currentColor" stroke-width="2.2"
+                            stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <span class="brand-copy">
+                    <strong>Fraud Detection</strong>
+                    <small>COMMAND CENTER</small>
+                </span>
+            </a>
+
+            <div class="sidebar-label">WORKSPACE</div>
+
+            <nav class="side-nav">
+                <button class="nav-item active" type="button" data-view="overview">
+                    <span>▦</span> Overview
+                </button>
+                <button class="nav-item" type="button" data-view="transactions">
+                    <span>☷</span> Transactions
+                </button>
+                <button class="nav-item" type="button" data-view="prediction">
+                    <span>⌁</span> Run prediction
+                </button>
+                <button class="nav-item" type="button" data-view="reviews">
+                    <span>▤</span> Investigation & review
+                    <span class="nav-count" id="sidebar-open-cases">0</span>
+                </button>
+                <button class="nav-item" type="button" data-view="models">
+                    <span>⌁</span> Model performance
+                </button>
+                <button class="nav-item" type="button" data-view="reports">
+                    <span>▧</span> AI investigation reports
+                </button>
+            </nav>
+
+            <div class="sidebar-spacer"></div>
+
+            <button class="nav-item settings-link" type="button" data-view="settings">
+                <span>⚙</span> Settings
+            </button>
+
+            <div class="sidebar-footer">
+                <span class="sidebar-status-dot"></span>
+                <span id="sidebar-connection">Connecting to API</span>
             </div>
-            <div class="status-pill"><span class="status-dot"></span><span id="api-status">Checking API...</span></div>
-        </header>
-        <main>
-            <section class="metric-grid">
-                <article class="metric-card"><span class="metric-label">Total Transactions</span><strong id="total-transactions">--</strong><small>All processed requests</small></article>
-                <article class="metric-card approved-card"><span class="metric-label">Approved</span><strong id="approved-count">--</strong><small>Low-risk decisions</small></article>
-                <article class="metric-card review-card"><span class="metric-label">Needs Review</span><strong id="review-count">--</strong><small>Human review queue</small></article>
-                <article class="metric-card blocked-card"><span class="metric-label">Blocked</span><strong id="blocked-count">--</strong><small>High-risk decisions</small></article>
-                <article class="metric-card"><span class="metric-label">Fraud Rate</span><strong id="fraud-rate">--</strong><small>Review + blocked share</small></article>
-                <article class="metric-card"><span class="metric-label">Avg. Anomaly Score</span><strong id="anomaly-score">--</strong><small>PyTorch reconstruction error</small></article>
-            </section>
-            <section class="content-grid">
-                <article class="panel chart-panel"><div class="panel-heading"><div><p class="eyebrow">DECISION DISTRIBUTION</p><h2>Transaction outcomes</h2></div></div><div class="chart-wrapper"><canvas id="decision-chart"></canvas></div></article>
-                <article class="panel chart-panel"><div class="panel-heading"><div><p class="eyebrow">MODEL HEALTH</p><h2>Risk signal comparison</h2></div></div><div class="chart-wrapper"><canvas id="risk-chart"></canvas></div></article>
-            </section>
-            <section class="content-grid">
-                <article class="panel">
-                    <div class="panel-heading"><div><p class="eyebrow">MODEL CONFIGURATION</p><h2>Active models</h2></div></div>
-                    <div class="model-list">
-                        <div class="model-row"><span>Production classifier</span><strong id="primary-model">Loading...</strong></div>
-                        <div class="model-row"><span>Anomaly detector</span><strong id="secondary-model">Loading...</strong></div>
-                        <div class="model-row"><span>Approval threshold</span><strong id="approval-threshold">--</strong></div>
-                        <div class="model-row"><span>Block threshold</span><strong id="block-threshold">--</strong></div>
+
+            <div class="sidebar-version">
+                Fraud Detection Platform <span>v1.0</span>
+            </div>
+        </aside>
+
+        <main class="main-area">
+            <header class="topbar">
+                <div class="topbar-heading">
+                    <div class="breadcrumb">
+                        WORKSPACE <span>/</span>
+                        <strong id="breadcrumb-current">OVERVIEW</strong>
                     </div>
-                </article>
-                <article class="panel">
-                    <div class="panel-heading"><div><p class="eyebrow">QUICK PREDICTION</p><h2>Test a transaction</h2></div></div>
-                    <form id="prediction-form" class="prediction-form">
-                        <label for="amount-input">Amount</label>
-                        <input id="amount-input" name="Amount" type="number" min="0" step="0.01" value="100" required>
-                        <label for="time-input">Time</label>
-                        <input id="time-input" name="Time" type="number" min="0" step="0.01" value="90000" required>
-                        <p class="form-help">Other features use neutral defaults for this demo prediction.</p>
-                        <button class="refresh-button" type="submit">Run prediction</button>
-                    </form>
-                    <div id="prediction-result" class="prediction-result" hidden></div>
-                    <div id="investigation-summary" class="investigation-summary" hidden>
-                        <h3>AI Investigation Summary</h3>
-                        <p id="summary-text"></p>
+                    <h1 id="page-title">Overview</h1>
+                </div>
+
+                <div class="topbar-actions">
+                    <span class="mode-badge" id="mode-badge">
+                        Checking data source
+                    </span>
+
+                    <span class="connection-pill" id="api-status">
+                        <i class="status-dot"></i> Connecting
+                    </span>
+
+                    <button class="icon-button" id="refresh-button"
+                        type="button" aria-label="Refresh dashboard data">
+                        ↻
+                    </button>
+
+                    <div class="user-chip">FD</div>
+                </div>
+            </header>
+
+            <div class="content-area">
+
+                <!-- OVERVIEW -->
+                <section class="view-panel active" id="view-overview"
+                    data-title="Overview">
+
+                    <div class="welcome-row">
+                        <div>
+                            <p class="section-kicker">RISK OPERATIONS</p>
+                            <h2>Your transaction risk, at a glance.</h2>
+                            <p class="muted-copy">
+                                A live view of transaction decisions and model signals.
+                            </p>
+                        </div>
+                        <div class="updated-label">
+                            Last checked <strong id="last-updated">—</strong>
+                        </div>
                     </div>
-                </article>
-            </section>
-            <section class="panel">
-                <div class="panel-heading"><div><p class="eyebrow">HUMAN-IN-THE-LOOP</p><h2>Review queue</h2></div><span class="queue-count" id="open-cases">0 open</span></div>
-                <div class="table-responsive"><table class="table dashboard-table"><thead><tr><th>Transaction ID</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody id="review-table"><tr><td colspan="4" class="empty-state">Loading review cases...</td></tr></tbody></table></div>
-            </section>
-            <section class="panel">
-                <div class="panel-heading"><div><p class="eyebrow">TRANSACTION OPERATIONS</p><h2>Recent transactions</h2></div><button class="refresh-button" id="refresh-button" type="button">Refresh data</button></div>
-                <div class="table-responsive"><table class="table dashboard-table"><thead><tr><th>ID</th><th>Amount</th><th>Fraud probability</th><th>Anomaly score</th><th>Decision</th><th>Latency</th></tr></thead><tbody id="transactions-table"><tr><td colspan="6" class="empty-state">Loading transactions...</td></tr></tbody></table></div>
-            </section>
+
+                    <div class="overview-hero">
+
+                        <div class="metric-stack metric-stack-left">
+                            <article class="stat-card">
+                                <div class="stat-top">
+                                    <span class="stat-icon cyan-icon">↗</span>
+                                    <span class="stat-label">All transactions</span>
+                                </div>
+                                <strong id="total-transactions">—</strong>
+                                <small>Processed requests</small>
+                            </article>
+
+                            <article class="stat-card">
+                                <div class="stat-top">
+                                    <span class="stat-icon green-icon">✓</span>
+                                    <span class="stat-label">Approved</span>
+                                </div>
+                                <strong id="approved-count">—</strong>
+                                <small>Low-risk decisions</small>
+                            </article>
+                        </div>
+
+                        <!-- NETWORK CORE -->
+                        <article class="network-card">
+                            <div class="network-card-heading">
+                                <div>
+                                    <p class="section-kicker">TRANSACTION NETWORK</p>
+                                    <h3>Network activity</h3>
+                                </div>
+                                <span class="network-live">
+                                    <i></i>
+                                    <span id="network-state">Monitoring</span>
+                                </span>
+                            </div>
+
+                            <div class="network-visual">
+                                <div class="network-orbit orbit-one"></div>
+                                <div class="network-orbit orbit-two"></div>
+                                <div class="network-orbit orbit-three"></div>
+
+                                <svg class="network-svg" viewBox="0 0 440 300"
+                                    role="img" aria-label="Connected transaction nodes">
+                                    <defs>
+                                        <radialGradient id="coreGlow">
+                                            <stop offset="0" stop-color="#8c7bff"
+                                                stop-opacity=".24"/>
+                                            <stop offset="1" stop-color="#8c7bff"
+                                                stop-opacity="0"/>
+                                        </radialGradient>
+
+                                        <linearGradient id="networkLine"
+                                            x1="0" y1="0" x2="1" y2="1">
+                                            <stop stop-color="#7c73ec" stop-opacity=".05"/>
+                                            <stop offset=".5" stop-color="#5bd5e6"
+                                                stop-opacity=".8"/>
+                                            <stop offset="1" stop-color="#7c73ec"
+                                                stop-opacity=".08"/>
+                                        </linearGradient>
+                                    </defs>
+
+                                    <circle cx="220" cy="150" r="125"
+                                        fill="url(#coreGlow)"/>
+
+                                    <g class="network-lines" stroke="url(#networkLine)"
+                                        stroke-width="1.15" fill="none">
+                                        <path d="M220 150 94 74 142 36 220 150 333 62 382 126 220 150 350 222 286 264 220 150 109 238 54 178 220 150"/>
+                                        <path d="M94 74 190 52 333 62M54 178 152 124 382 126M109 238 220 252 350 222M142 36 190 52 286 264"
+                                            stroke-dasharray="4 7"/>
+                                        <path d="M220 150 190 52M220 150 152 124M220 150 286 264M220 150 220 252"/>
+                                    </g>
+
+                                    <g class="network-points">
+                                        <circle class="node node-cyan" cx="94" cy="74" r="5"/>
+                                        <circle class="node node-violet" cx="142" cy="36" r="4"/>
+                                        <circle class="node node-green" cx="333" cy="62" r="5"/>
+                                        <circle class="node node-cyan" cx="382" cy="126" r="4"/>
+                                        <circle class="node node-green" cx="350" cy="222" r="5"/>
+                                        <circle class="node node-violet" cx="286" cy="264" r="4"/>
+                                        <circle class="node node-amber" cx="109" cy="238" r="5"/>
+                                        <circle class="node node-cyan" cx="54" cy="178" r="4"/>
+                                        <circle class="node node-green" cx="190" cy="52" r="4"/>
+                                        <circle class="node node-amber" cx="152" cy="124" r="4"/>
+                                        <circle class="node node-cyan" cx="220" cy="252" r="4"/>
+                                    </g>
+
+                                    <circle cx="220" cy="150" r="42" class="core-ring"/>
+                                    <circle cx="220" cy="150" r="31" class="core-fill"/>
+
+                                    <path d="M220 128 237 134v13c0 11-7 18-17 23-10-5-17-12-17-23v-13l17-6Z"
+                                        fill="none" stroke="#b8b2ff" stroke-width="1.6"/>
+                                    <path d="m212 150 6 6 11-13"
+                                        fill="none" stroke="#6bd7e8" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+
+                                <div class="network-center-label">
+                                    <strong id="network-total">—</strong>
+                                    <span>transactions tracked</span>
+                                </div>
+                            </div>
+
+                            <div class="network-legend">
+                                <span>
+                                    <i class="legend-dot legend-approved"></i>
+                                    Approved <b id="network-approved">—</b>
+                                </span>
+                                <span>
+                                    <i class="legend-dot legend-review"></i>
+                                    Review <b id="network-review">—</b>
+                                </span>
+                                <span>
+                                    <i class="legend-dot legend-blocked"></i>
+                                    Blocked <b id="network-blocked">—</b>
+                                </span>
+                            </div>
+                        </article>
+
+                        <div class="metric-stack metric-stack-right">
+                            <article class="stat-card">
+                                <div class="stat-top">
+                                    <span class="stat-icon amber-icon">!</span>
+                                    <span class="stat-label">Needs review</span>
+                                </div>
+                                <strong id="review-count">—</strong>
+                                <small>Awaiting analyst decision</small>
+                            </article>
+
+                            <article class="stat-card">
+                                <div class="stat-top">
+                                    <span class="stat-icon red-icon">×</span>
+                                    <span class="stat-label">Blocked</span>
+                                </div>
+                                <strong id="blocked-count">—</strong>
+                                <small>High-risk decisions</small>
+                            </article>
+                        </div>
+                    </div>
+
+                    <div class="overview-lower-grid">
+                        <article class="surface-card model-overview-card">
+                            <div class="card-heading">
+                                <div>
+                                    <p class="section-kicker">MODEL INTELLIGENCE</p>
+                                    <h3>Active model stack</h3>
+                                </div>
+                                <button class="text-link" type="button"
+                                    data-view="models">View details →</button>
+                            </div>
+
+                            <div class="model-compact-row">
+                                <span class="model-symbol xgb-symbol">X</span>
+                                <div>
+                                    <strong id="primary-model">XGBoost</strong>
+                                    <small>Production classifier · decision authority</small>
+                                </div>
+                                <span class="model-state"><i></i>Active</span>
+                            </div>
+
+                            <div class="model-compact-row">
+                                <span class="model-symbol ae-symbol">A</span>
+                                <div>
+                                    <strong id="secondary-model">PyTorch Autoencoder</strong>
+                                    <small>Anomaly signal · supporting model</small>
+                                </div>
+                                <span class="model-state"><i></i>Active</span>
+                            </div>
+
+                            <div class="model-footnote">
+                                <span>Average anomaly score</span>
+                                <strong id="anomaly-score">—</strong>
+                            </div>
+                        </article>
+
+                        <article class="surface-card recent-card">
+                            <div class="card-heading">
+                                <div>
+                                    <p class="section-kicker">LATEST ACTIVITY</p>
+                                    <h3>Recent transactions</h3>
+                                </div>
+                                <button class="text-link" type="button"
+                                    data-view="transactions">View all →</button>
+                            </div>
+                            <div class="mini-transaction-list" id="recent-transactions">
+                                <div class="empty-inline">Waiting for transaction data.</div>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <!-- TRANSACTIONS -->
+                <section class="view-panel" id="view-transactions"
+                    data-title="Transactions" hidden>
+                    <div class="page-intro">
+                        <div>
+                            <p class="section-kicker">TRANSACTION OPERATIONS</p>
+                            <h2>Transaction history</h2>
+                            <p class="muted-copy">Review recent model decisions and their risk signals.</p>
+                        </div>
+                    </div>
+
+                    <article class="surface-card table-card">
+                        <div class="card-heading">
+                            <div>
+                                <h3>All recorded transactions</h3>
+                                <p class="muted-copy small-copy">Most recent records first.</p>
+                            </div>
+                            <span class="table-count" id="transaction-count">0 records</span>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Amount</th>
+                                        <th>Fraud probability</th>
+                                        <th>Anomaly score</th>
+                                        <th>Decision</th>
+                                        <th>Latency</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactions-table">
+                                    <tr><td colspan="7" class="empty-state">Loading transactions…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- PREDICTION -->
+                <section class="view-panel" id="view-prediction"
+                    data-title="Run prediction" hidden>
+                    <div class="page-intro">
+                        <div>
+                            <p class="section-kicker">MODEL INFERENCE</p>
+                            <h2>Test a transaction</h2>
+                            <p class="muted-copy">Submit transaction features to the XGBoost classifier and anomaly detector.</p>
+                        </div>
+                    </div>
+
+                    <div class="prediction-layout">
+                        <article class="surface-card prediction-form-card">
+                            <div class="card-heading">
+                                <div>
+                                    <h3>Transaction details</h3>
+                                    <p class="muted-copy small-copy">
+                                        Two fields are entered here; remaining V1–V28 features use neutral demo defaults.
+                                    </p>
+                                </div>
+                                <span class="form-step">01 / INPUT</span>
+                            </div>
+
+                            <form id="prediction-form" class="prediction-form">
+                                <div class="form-field">
+                                    <label for="amount-input">Transaction amount</label>
+                                    <div class="input-with-prefix">
+                                        <span>$</span>
+                                        <input id="amount-input" name="Amount"
+                                            type="number" min="0" step="0.01"
+                                            value="100" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-field">
+                                    <label for="time-input">Transaction time</label>
+                                    <input id="time-input" name="Time"
+                                        type="number" min="0" step="0.01"
+                                        value="90000" required>
+                                    <small>Seconds elapsed in the source dataset's time format.</small>
+                                </div>
+
+                                <div class="input-note">
+                                    <span>i</span>
+                                    <p>This quick form is a demonstration. A complete transaction assessment requires the original feature values.</p>
+                                </div>
+
+                                <button class="primary-button" id="prediction-submit" type="submit">
+                                    Run prediction <span>→</span>
+                                </button>
+                            </form>
+                        </article>
+
+                        <div class="prediction-output-column">
+                            <article class="surface-card result-placeholder"
+                                id="prediction-placeholder">
+                                <div class="placeholder-icon">⌁</div>
+                                <h3>Prediction results will appear here</h3>
+                                <p>Run a transaction through the model to see its decision, fraud probability, anomaly score and investigation summary.</p>
+                            </article>
+
+                            <article class="surface-card prediction-result-card"
+                                id="prediction-result" hidden></article>
+
+                            <article class="surface-card investigation-summary-card"
+                                id="investigation-summary" hidden>
+                                <div class="card-heading">
+                                    <div>
+                                        <p class="section-kicker">ANALYST NOTES</p>
+                                        <h3>Investigation summary</h3>
+                                    </div>
+                                    <span class="summary-mark">AI</span>
+                                </div>
+                                <pre id="summary-text"></pre>
+                                <div class="agent-recommendation"
+                                    id="agent-recommendation" hidden></div>
+                            </article>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- REVIEW QUEUE -->
+                <section class="view-panel" id="view-reviews"
+                    data-title="Investigation & review" hidden>
+                    <div class="page-intro">
+                        <div>
+                            <p class="section-kicker">HUMAN-IN-THE-LOOP</p>
+                            <h2>Investigation & review</h2>
+                            <p class="muted-copy">Transactions flagged by the model for analyst attention.</p>
+                        </div>
+                        <span class="review-total" id="open-cases">0 open cases</span>
+                    </div>
+
+                    <article class="surface-card table-card">
+                        <div class="card-heading">
+                            <div>
+                                <h3>Open review queue</h3>
+                                <p class="muted-copy small-copy">Approve or reject a case after reviewing it.</p>
+                            </div>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Queue status</th>
+                                        <th>Created</th>
+                                        <th>Analyst decision</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="review-table">
+                                    <tr><td colspan="5" class="empty-state">Loading review cases…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+
+                    <p class="review-disclaimer">
+                        Human decisions are recorded by the API. The AI-generated summary does not approve or reject a transaction.
+                    </p>
+                </section>
+
+                <!-- MODEL PERFORMANCE -->
+                <section class="view-panel" id="view-models"
+                    data-title="Model performance" hidden>
+                    <div class="page-intro">
+                        <div>
+                            <p class="section-kicker">MODEL INTELLIGENCE</p>
+                            <h2>Model performance</h2>
+                            <p class="muted-copy">A view of the models and thresholds currently exposed by the API.</p>
+                        </div>
+                    </div>
+
+                    <div class="model-detail-grid">
+                        <article class="surface-card model-detail-card">
+                            <span class="model-symbol xgb-symbol large-symbol">X</span>
+                            <p class="section-kicker">PRODUCTION CLASSIFIER</p>
+                            <h3 id="model-primary-title">XGBoost</h3>
+                            <p class="muted-copy">Produces the fraud probability and the authoritative transaction decision.</p>
+                            <span class="model-state"><i></i>Decision engine</span>
+                        </article>
+
+                        <article class="surface-card model-detail-card">
+                            <span class="model-symbol ae-symbol large-symbol">A</span>
+                            <p class="section-kicker">ANOMALY DETECTOR</p>
+                            <h3 id="model-secondary-title">PyTorch Autoencoder</h3>
+                            <p class="muted-copy">Provides a complementary reconstruction-error signal for investigation.</p>
+                            <span class="model-state"><i></i>Supporting signal</span>
+                        </article>
+                    </div>
+
+                    <div class="threshold-grid">
+                        <article class="surface-card threshold-card">
+                            <p class="section-kicker">APPROVAL THRESHOLD</p>
+                            <strong id="approval-threshold">—</strong>
+                            <p class="muted-copy">Configured model boundary exposed by the API.</p>
+                        </article>
+                        <article class="surface-card threshold-card">
+                            <p class="section-kicker">BLOCK THRESHOLD</p>
+                            <strong id="block-threshold">—</strong>
+                            <p class="muted-copy">Configured model boundary exposed by the API.</p>
+                        </article>
+                        <article class="surface-card threshold-card">
+                            <p class="section-kicker">AVERAGE ANOMALY SCORE</p>
+                            <strong id="model-anomaly-score">—</strong>
+                            <p class="muted-copy">Mean score across recorded transactions.</p>
+                        </article>
+                        <article class="surface-card threshold-card">
+                            <p class="section-kicker">AVERAGE INFERENCE LATENCY</p>
+                            <strong id="average-latency">—</strong>
+                            <p class="muted-copy">Average response time recorded by the API.</p>
+                        </article>
+                    </div>
+
+                    <div class="model-note">
+                        <strong>Decision ownership</strong>
+                        <p>
+                            XGBoost remains responsible for Approved, Review and Block.
+                            The PyTorch autoencoder and AI investigation summary provide
+                            supporting information; neither overrides the classifier's decision.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- AI REPORTS -->
+                <section class="view-panel" id="view-reports"
+                    data-title="AI investigation reports" hidden>
+                    <div class="page-intro">
+                        <div>
+                            <p class="section-kicker">INVESTIGATION WORKSPACE</p>
+                            <h2>AI investigation reports</h2>
+                            <p class="muted-copy">Review summaries generated from the latest prediction in this browser session.</p>
+                        </div>
+                    </div>
+
+                    <div id="reports-list" class="reports-list">
+                        <article class="surface-card report-empty">
+                            <div class="placeholder-icon">✎</div>
+                            <h3>No reports in this session</h3>
+                            <p>Run a prediction to generate an investigation summary. Reports are not stored separately by the dashboard.</p>
+                            <button class="secondary-button" type="button"
+                                data-view="prediction">Run a prediction</button>
+                        </article>
+                    </div>
+                </section>
+
+                <!-- SETTINGS -->
+                <section class="view-panel" id="view-settings"
+                    data-title="Settings" hidden>
+                    <div class="page-intro">
+                        <div>
+                            <p class="section-kicker">CONFIGURATION</p>
+                            <h2>Workspace settings</h2>
+                            <p class="muted-copy">Connection and data-display information for this dashboard.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-grid">
+                        <article class="surface-card settings-card">
+                            <p class="section-kicker">API CONNECTION</p>
+                            <h3>Backend endpoint</h3>
+                            <code id="api-endpoint">—</code>
+                            <div class="settings-row">
+                                <span>Connection status</span>
+                                <strong id="settings-connection">Checking…</strong>
+                            </div>
+                            <div class="settings-row">
+                                <span>Data source</span>
+                                <strong id="settings-source">—</strong>
+                            </div>
+                        </article>
+
+                        <article class="surface-card settings-card">
+                            <p class="section-kicker">DISPLAY BEHAVIOUR</p>
+                            <h3>Demo data fallback</h3>
+                            <p class="muted-copy">
+                                When the API cannot be reached, the dashboard loads
+                                a clearly labelled sample dataset from demo-data.json.
+                                Demo records are never presented as live transactions.
+                            </p>
+                            <div class="settings-row">
+                                <span>Current display mode</span>
+                                <strong id="settings-mode">—</strong>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <footer class="app-footer">
+                    <span>Fraud Detection Command Center</span>
+                    <span>Built with FastAPI · XGBoost · PyTorch · SHAP</span>
+                </footer>
+            </div>
         </main>
-        <footer>Fraud Detection Platform · XGBoost production classifier · PyTorch anomaly signal</footer>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
     <script src="config.js"></script>
-    <script src="app.js"></script>
+    <script src="app.js" defer></script>
 </body>
 </html>
