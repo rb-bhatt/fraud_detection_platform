@@ -12,7 +12,7 @@
   "model_info": {
     "model": "XGBoost",
     "secondary_model": "PyTorch Autoencoder",
-    "approval_threshold": 0.3,
+    "approval_threshold": 0.6,
     "block_threshold": 0.8
   },
   "transactions": [
