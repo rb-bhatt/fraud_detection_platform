@@ -1,4 +1,8 @@
+import logging
+
 from api.llm_provider import generate_investigation_summary
+
+logger = logging.getLogger(__name__)
 
 def build_investigation_summary(
         fraud_probability:float,
@@ -7,7 +11,7 @@ def build_investigation_summary(
         transaction:dict
 ) -> str:
     
-    amount = transaction.get("amount", 0)
+    amount = transaction.get("Amount", transaction.get("amount", 0))
     transaction_id = transaction.get("transaction_id", "Unknown")
 
     summary = (
@@ -40,7 +44,22 @@ def build_investigation_summary(
         "Explain the risk indicators clearly. Do not invent facts. "
         "The final action requires human analyst approval."
     )
-    return generate_investigation_summary(prompt)
+    try:
+        return generate_investigation_summary(prompt)
+
+    except Exception:
+        logger.exception(
+            "AI investigation summary unavailable. "
+            "Using deterministic fallback summary."
+        )
+
+        return (
+            summary
+            + "\n\nAI-generated investigation summary is temporarily "
+            "unavailable. This report uses the available model "
+            "prediction and feature explanations."
+        )
+
 if __name__ == "__main__":
     fraud_probability = 0.92
     decision = "Block"
