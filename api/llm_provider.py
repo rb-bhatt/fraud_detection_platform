@@ -14,29 +14,41 @@ def generate_investigation_summary(prompt: str) -> str:
     provider = os.getenv("LLM_PROVIDER", "mock").lower()
     if provider == "mock":
         return f"Mock investigation summary:\n{prompt}"
-    if provider != "gemini":
+    if provider not in {"gemini", "openrouter"}:
         raise ValueError(f"Unsupported LLM_PROVIDER: {provider}")
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError(
-            "GEMINI_API_KEY is required when LLM_PROVIDER=gemini"
+    if provider == "gemini":
+        api_key = os.getenv("GEMINI_API_KEY")
+        model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+        endpoint = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:generateContent"
         )
-    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
-    endpoint = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{model}:generateContent"
-    )
+        headers = {"x-goog-api-key": api_key or ""}
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+
+    else:
+        api_key = os.getenv("OPENROUTER_API_KEY")
+        model = os.getenv("OPENROUTER_MODEL", "openrouter/free")
+        endpoint = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key or ''}",
+            "Content-Type": "application/json",
+            "X-Title": "Fraud Detection Platform",
+        }
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 500,
+            "temperature": 0.2,
+        }
+
+    if not api_key:
+        raise RuntimeError(f"API key is required when LLM_PROVIDER={provider}")
+
     max_retries = int(os.getenv("LLM_MAX_RETRIES", "2"))
     connect_timeout = float(os.getenv("LLM_CONNECT_TIMEOUT", "5"))
     read_timeout = float(os.getenv("LLM_READ_TIMEOUT", "25"))
     backoff = float(os.getenv("LLM_RETRY_BACKOFF", "1"))
-    headers = {"x-goog-api-key": api_key}
-    payload = {
-        "contents": [
-            {"parts": [{"text": prompt}]}
-        ]
-    }
-
     for attempt in range(max_retries + 1):
         try:
             response = requests.post(
@@ -49,61 +61,28 @@ def generate_investigation_summary(prompt: str) -> str:
             if response.status_code in RETRYABLE_STATUS_CODES:
                 if attempt == max_retries:
                     response.raise_for_status()
-                retry_after = response.headers.get("Retry-After")
 
-                try:
-                    delay = float(retry_after) if retry_after else (
-                        backoff * (2 ** attempt)
-                    )
-                except ValueError:
-                    delay = backoff * (2 ** attempt)
-
-                delay = min(max(delay, 0), 5)
-
-                logger.warning(
-                    "Gemini returned HTTP %s. Retrying in %.1f seconds "
-                    "(attempt %s/%s)",
-                    response.status_code,
-                    delay,
-                    attempt + 1,
-                    max_retries + 1,
-                )
-
-                time.sleep(delay)
+                time.sleep(min(backoff * (2 ** attempt), 5))
                 continue
 
             response.raise_for_status()
-
             result = response.json()
 
-            try:
+            if provider == "gemini":
                 text = result["candidates"][0]["content"]["parts"][0]["text"]
+            else:
+                text = result["choices"][0]["message"]["content"]
 
-                if not isinstance(text, str) or not text.strip():
-                    raise ValueError("Gemini returned empty text")
+            if not isinstance(text, str) or not text.strip():
+                raise ValueError("LLM returned empty text")
 
-                return text.strip()
-
-            except (KeyError, IndexError, TypeError) as exc:
-                raise RuntimeError(
-                    "Gemini returned an unexpected response"
-                ) from exc
+            return text.strip()
 
         except (requests.Timeout, requests.ConnectionError):
             if attempt == max_retries:
-                logger.exception("Gemini request timed out or failed")
+                logger.exception("%s request failed", provider)
                 raise
 
-            delay = min(backoff * (2 ** attempt), 5)
+            time.sleep(min(backoff * (2 ** attempt), 5))
 
-            logger.warning(
-                "Gemini connection failure. Retrying in %.1f seconds "
-                "(attempt %s/%s)",
-                delay,
-                attempt + 1,
-                max_retries + 1,
-            )
-
-            time.sleep(delay)
-
-    raise RuntimeError("Gemini request failed after all retries")
+    raise RuntimeError(f"{provider} request failed after all retries")
