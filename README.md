@@ -29,6 +29,30 @@ prediction automatically.
 XGBoost remains the decision-maker. The autoencoder is an experimental
 unsupervised signal and does not replace the supervised classifier.
 
+```mermaid
+flowchart LR
+    U[Analyst / Dashboard] --> A[FastAPI API]
+    A --> X[XGBoost<br/>Production decision]
+    A --> P[PyTorch Autoencoder<br/>Anomaly signal]
+    X --> S[SHAP explanations]
+    X --> D{Approved / Review / Block}
+    S --> G[Gemini / OpenRouter<br/>Investigation summary]
+    D --> W[Human-supervised agent workflow]
+    W --> H[Approve / Reject / Monitor]
+    A --> DB[(SQLite<br/>Transactions and cases)]
+    DB --> U
+```
+
+### Request flow
+
+1. The dashboard sends a complete transaction feature vector to FastAPI.
+2. XGBoost produces the authoritative fraud probability and decision.
+3. The PyTorch autoencoder adds a complementary anomaly score.
+4. SHAP identifies influential model features.
+5. The optional LLM summarizes the evidence without changing the decision.
+6. The agent recommends monitoring, human review, or escalation.
+7. Analysts approve or reject high-impact review cases.
+
 ## GenAI and agentic workflow
 
 The GenAI layer creates a grounded investigation summary from the model
@@ -89,6 +113,24 @@ Open `http://127.0.0.1:5500` in a browser. The dashboard provides:
 The quick form's neutral defaults are only a UI demonstration. For realistic
 results, use the dataset-backed scenarios or send the complete `Time`, `V1`–
 `V28`, and `Amount` feature vector to `POST /predict`.
+
+## Screenshots
+
+### Dashboard overview
+
+![Dashboard overview](docs/Dashboard%20Overview.png)
+
+### Block prediction and AI review
+
+![Block prediction and AI review](docs/BlockPrediction%20%2B%20AI%20review.png)
+
+### Model comparison
+
+![Model comparison](docs/Model%20Comparison.png)
+
+### Human review queue
+
+![Human review queue](docs/Review%20Queue.png)
 
 ## Docker
 
