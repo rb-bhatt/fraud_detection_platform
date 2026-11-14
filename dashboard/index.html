@@ -394,6 +394,19 @@
                                 <button class="primary-button" id="prediction-submit" type="submit">
                                     Run prediction <span>→</span>
                                 </button>
+
+                                <div class="scenario-divider"><span>or load a real dataset example</span></div>
+                                <div class="scenario-buttons" aria-label="Dataset demonstration scenarios">
+                                    <button class="secondary-button scenario-button"
+                                        type="button" data-scenario="approved">Approved</button>
+                                    <button class="secondary-button scenario-button"
+                                        type="button" data-scenario="review">Review</button>
+                                    <button class="secondary-button scenario-button"
+                                        type="button" data-scenario="blocked">Block</button>
+                                </div>
+                                <p class="scenario-status" id="scenario-status">
+                                    Neutral values are used until a scenario is selected.
+                                </p>
                             </form>
                         </article>
 
@@ -602,7 +615,7 @@
         </main>
     </div>
 
-    <script src="config.js"></script>
-    <script src="app.js" defer></script>
+    <script src="config.js?v=2"></script>
+    <script src="app.js?v=2" defer></script>
 </body>
 </html>

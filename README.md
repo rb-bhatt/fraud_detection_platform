@@ -57,6 +57,7 @@ Open `http://127.0.0.1:5500` in a browser. The dashboard provides:
 - Approve/reject actions for open review cases
 - XGBoost and PyTorch model metadata
 - A quick prediction form using neutral feature defaults
+- Approved, Review, and Block buttons backed by real dataset examples
 
 ## Docker
 

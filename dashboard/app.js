@@ -74,6 +74,7 @@ const el = {
     settingsConnection: document.getElementById('settings-connection'),
     settingsSource: document.getElementById('settings-source'),
     settingsMode: document.getElementById('settings-mode'),
+    scenarioStatus: document.getElementById('scenario-status'),
 };
 
 const pageTitles = {
@@ -85,6 +86,9 @@ const pageTitles = {
     reports: 'AI investigation reports',
     settings: 'Settings',
 };
+
+let selectedScenario = null;
+let demoScenarios = null;
 
 
 // ================================================
@@ -665,6 +669,26 @@ function buildPredictionPayload(amount, time) {
     return payload;
 }
 
+async function selectDemoScenario(scenarioName) {
+    if (!demoScenarios) {
+        const response = await fetch('demo-scenarios.json', { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error('Demo scenarios could not be loaded.');
+        }
+        demoScenarios = await response.json();
+    }
+
+    const scenario = demoScenarios[scenarioName];
+    if (!scenario || !scenario.payload) {
+        throw new Error('Selected demo scenario is unavailable.');
+    }
+
+    selectedScenario = scenario;
+    document.getElementById('amount-input').value = scenario.payload.Amount;
+    document.getElementById('time-input').value = scenario.payload.Time;
+    el.scenarioStatus.textContent = `${scenario.label}: ${scenario.description}`;
+}
+
 
 // ================================================
 // 16. CLEAR OLD PREDICTION
@@ -848,7 +872,9 @@ async function submitPrediction(event) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(
-                buildPredictionPayload(amount, time)
+                selectedScenario
+                    ? selectedScenario.payload
+                    : buildPredictionPayload(amount, time)
             ),
         });
 
@@ -1017,6 +1043,27 @@ document.addEventListener('click', event => {
             actionButton
         );
     }
+});
+
+document.querySelectorAll('[data-scenario]').forEach(button => {
+    button.addEventListener('click', async () => {
+        try {
+            await selectDemoScenario(button.dataset.scenario);
+            await submitPrediction({
+                preventDefault() {},
+            });
+        } catch (error) {
+            el.scenarioStatus.textContent = error.message;
+        }
+    });
+});
+
+['amount-input', 'time-input'].forEach(inputId => {
+    document.getElementById(inputId).addEventListener('input', () => {
+        selectedScenario = null;
+        el.scenarioStatus.textContent =
+            'Custom values entered. V1–V28 will use neutral demo defaults.';
+    });
 });
 
 // Refresh dashboard
