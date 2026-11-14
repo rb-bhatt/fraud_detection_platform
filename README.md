@@ -6,6 +6,15 @@ investigation summaries, and human-supervised agent recommendations.
 
 Tests run automatically through GitHub Actions on pushes and pull requests.
 
+## Live demo
+
+- Dashboard: https://fraud-detection-platform-tsqk.onrender.com
+- API docs: https://fraud-detection-0c4l.onrender.com/docs
+
+The Prediction view includes dataset-backed `Approved`, `Review`, and `Block`
+scenarios. Clicking a scenario loads the complete feature vector and runs the
+prediction automatically.
+
 ## Architecture
 
 1. FastAPI receives and validates a transaction.
@@ -19,6 +28,24 @@ Tests run automatically through GitHub Actions on pushes and pull requests.
 
 XGBoost remains the decision-maker. The autoencoder is an experimental
 unsupervised signal and does not replace the supervised classifier.
+
+## GenAI and agentic workflow
+
+The GenAI layer creates a grounded investigation summary from the model
+decision, fraud probability, transaction amount, and SHAP signals. Gemini,
+OpenRouter, or the deterministic mock provider can be selected through
+environment variables. The LLM does not make or override the fraud decision.
+
+The agent workflow is human-supervised:
+
+```text
+Approved -> Monitor
+Review   -> Human review
+Block    -> Escalate for manual approval
+```
+
+Analysts can approve or reject review cases from the dashboard. High-impact
+actions are recommendations only until a human makes the final decision.
 
 ## Run
 
@@ -59,6 +86,10 @@ Open `http://127.0.0.1:5500` in a browser. The dashboard provides:
 - A quick prediction form using neutral feature defaults
 - Approved, Review, and Block buttons backed by real dataset examples
 
+The quick form's neutral defaults are only a UI demonstration. For realistic
+results, use the dataset-backed scenarios or send the complete `Time`, `V1`–
+`V28`, and `Amount` feature vector to `POST /predict`.
+
 ## Docker
 
 Docker Desktop is required. From the project root:
@@ -93,6 +124,26 @@ Gemini summarizes the existing fraud probability, decision, and SHAP
 explanations. It does not make the fraud decision; XGBoost remains responsible
 for `Approved`, `Review`, and `Block`.
 
+OpenRouter can be enabled instead:
+
+```powershell
+$env:LLM_PROVIDER = "openrouter"
+$env:OPENROUTER_API_KEY = "your-key"
+$env:OPENROUTER_MODEL = "openrouter/free"
+```
+
+## Testing
+
+Run the complete test suite:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+The tests cover API validation and persistence, model metadata, metrics,
+GenAI fallback behavior, review workflows, and the three demonstration
+scenarios.
+
 ## Render deployment
 
 The [render.yaml](render.yaml) Blueprint defines an API service and dashboard
@@ -106,3 +157,14 @@ or the dashboard.
 
 See [reports/model_comparison.md](reports/model_comparison.md) for the
 evaluation and production-role decision.
+
+## Limitations
+
+- The dataset's `V1`–`V28` columns are anonymized, so explanations identify
+  influential features but cannot describe their business meaning.
+- The autoencoder is a complementary anomaly signal, not the production
+  classifier.
+- LLM summaries are optional and can fall back to deterministic text when a
+  provider is unavailable.
+- Fraud decisions are model predictions; real financial blocking should include
+  analyst review, policy checks, monitoring, and threshold calibration.
