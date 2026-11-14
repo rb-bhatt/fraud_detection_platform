@@ -1,1 +1,1 @@
-window.FRAUD_API_URL = "";
+window.FRAUD_API_URL = "https://fraud-detection-0c4l.onrender.com";
